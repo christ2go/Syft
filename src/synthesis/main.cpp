@@ -36,7 +36,7 @@ int main(int argc, char ** argv){
     string starting_player;
     string observability;
     string spec_type;
-    if(argc != 5){
+    if(argc != 6){
         cout<<"Usage: ./Syft DFAfile Partfile Starting_player(0: system, 1: environment) Observability(partial, full) SpecType(dfa, cordfa)"<<endl;
         return 0;
     }
