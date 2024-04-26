@@ -12,7 +12,7 @@ int main (int argc, char ** argv)
     string StrLine;
     string input;
     if(argc != 2){
-        printf("Usage: ./ltlf2pfol format filename\n");
+        printf("Usage: ./ltlf2pfol filename\n");
         return 0;
   }
     input = argv[1];
