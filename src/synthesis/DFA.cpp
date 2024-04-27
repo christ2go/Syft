@@ -30,7 +30,9 @@ DFA::~DFA()
     //dtor
     //delete mgr;// = NULL;
 }
-void DFA::initialize(string filename, string partfile){
+
+
+void DFA::initialize(std::string filename, string partfile){
     //ctor
     read_from_file(filename);
     if(DFAflag == true) {
@@ -53,8 +55,8 @@ void DFA::initialize(string filename, string partfile){
       initbv[i] = temp%2;
       temp = temp/2;
     }
+    }
 }
-
 
 void DFA::read_partfile(string partfile){
     ifstream f(partfile.c_str());

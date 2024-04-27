@@ -2,6 +2,7 @@
 
 #ifndef DFA_H
 #define DFA_H
+using namespace CUDD;
 
 typedef std::vector<int> item;
 typedef std::vector<BDD> vbdd;

@@ -49,7 +49,7 @@ void syn::initializer(){
 
     bdd->dumpdot(bdd->finalstatesBDD, "accs");
     for(int i = 0; i < bdd->res.size(); i++){
-        bdd->dumpdot(bdd->res[i], "trans"+to_string(i));
+        bdd->dumpdot(bdd->res[i], "trans"+std::to_string(i));
     }
 }
 
