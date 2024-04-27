@@ -19,10 +19,10 @@ syn::syn(shared_ptr<Cudd> m, string filename, string partfile)
     //Cudd *p = &mgr;
     bdd = make_unique<DFA>(m);
     bdd->initialize(filename, partfile);
-    mgr = m;
-    initializer();
-
-    //bdd->bdd2dot();
+    if(bdd->DFAflag == true){
+        mgr = m;
+        initializer();
+    }
 
 }
 
@@ -31,8 +31,6 @@ syn::syn(shared_ptr<Cudd> m, unique_ptr<DFA> d)
     bdd = move(d);
     mgr = move(m);
     initializer();
-
-    bdd->bdd2dot();
 }
 
 syn::~syn()
@@ -49,7 +47,10 @@ void syn::initializer(){
     Wprime.push_back(bdd->finalstatesBDD);
     cur = 0;
 
-
+    bdd->dumpdot(bdd->finalstatesBDD, "accs");
+    for(int i = 0; i < bdd->res.size(); i++){
+        bdd->dumpdot(bdd->res[i], "trans"+to_string(i));
+    }
 }
 
 BDD syn::state2bdd(int s){
@@ -104,6 +105,9 @@ void syn::printBDDSat(BDD b){
 }
 
 bool syn::realizablity_sys(unordered_map<unsigned int, BDD>& IFstrategy){
+    if(bdd->DFAflag == false){
+        return false;
+    }
     int iteration = 0;
     while(true){
         iteration = iteration + 1;

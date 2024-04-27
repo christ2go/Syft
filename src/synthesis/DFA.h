@@ -39,6 +39,7 @@ class DFA
 	
         //new bdd constructer
         void construct_bdd_new();
+        bool DFAflag = false;
 
 	// domain-spec separate construction
 	// Front need to be called before variable construction for domain
