@@ -92,6 +92,7 @@ string syn::state2bin(int n){
 bool syn::fixpoint(){
     if(W[cur] == W[cur-1])
         return true;
+    return false;
 }
 
 void syn::printBDDSat(BDD b){

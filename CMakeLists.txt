@@ -4,7 +4,7 @@ project(Syft)
 set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_BUILD_TYPE Debug)
 
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++14)
 
 set(CMAKE_MODULE_PATH
     "${CMAKE_MODULE_PATH}"

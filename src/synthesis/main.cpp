@@ -75,12 +75,11 @@ int main(int argc, char ** argv){
     }
 
     shared_ptr<Cudd> mgr = make_shared<Cudd>();
-    autfile = filename;
 
     unique_ptr<syn> test =
       cordfa_spec
-      ? make_unique<CoRDFA_syn>(move(mgr), filenamebackup, autfile, partfile)
-      : make_unique<syn>(move(mgr), autfile, partfile, partial_observability);
+      ? make_unique<CoRDFA_syn>(move(mgr), filenamebackup, filename, partfile)
+      : make_unique<syn>(move(mgr), filename, partfile, partial_observability);
     
     clock_t c_dfa_end = clock();
     auto t_dfa_end = chrono::high_resolution_clock::now();
