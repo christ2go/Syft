@@ -8,15 +8,21 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
-CoRDFA_syn::CoRDFA_syn(shared_ptr<Cudd> m, string filename, string partfile)
+CoRDFA_syn::CoRDFA_syn(shared_ptr<Cudd> m, string filename, string filenonbackup, string partfile)
 {
     unique_ptr<SSNFA> ssnfa = make_unique<SSNFA>(m);
-    ssnfa->initialize_mona(filename, partfile);
+    ssnfa->initialize_mona(filenonbackup, partfile);
 
-    mgr = move(m);
+    mgr = m;
     ssnfa->project_unobservables();
     ssnfa->complement();
     initializer(ssnfa);
+
+    /*unique_ptr<DFA> dfa = make_unique<DFA>(m);
+    dfa->initialize(filenonbackup, partfile, false);
+
+    unique_ptr<DFA> finaldfa = make_unique<DFA>(m);
+    finaldfa->init_from_cross_product(ssnfa.get(), dfa.get()); */
     bdd = move(ssnfa);
 }
 
@@ -33,8 +39,10 @@ void CoRDFA_syn::initializer(unique_ptr<SSNFA>& ssnfa){
   cur = 0;
 
   for (int i = 0; i < ssnfa->nstates; ++i) {
+    std::cout << "iteration " << i << " " << ssnfa->nstates << std::endl;
     ssnfa->res.push_back(mgr->bddZero());
     for (int j = 0; j < ssnfa->nstates; ++j) {
+          std::cout << "iteration * " << j << " " << ssnfa->nstates << std::endl;
       BDD trans = ssnfa->bddvars[j] & ssnfa->labels[i][j];
       ssnfa->res[i] |= trans;
     }

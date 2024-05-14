@@ -9,7 +9,7 @@ using std::vector;
 
 SSNFA::SSNFA() : DFA() { }
 
-SSNFA::SSNFA(shared_ptr<Cudd> m) : DFA(move(m)) { }
+SSNFA::SSNFA(shared_ptr<Cudd> m) : DFA(m) { }
 
 SSNFA::~SSNFA() {}
 

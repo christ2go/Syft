@@ -17,8 +17,9 @@ using std::move;
 //update test
 
 DFA::DFA(shared_ptr<Cudd> m){
-    mgr = move(m);
+    //mgr = move(m);
     //ctor
+    mgr = m;
 }
 
 DFA::DFA(){
@@ -125,6 +126,51 @@ void DFA::read_partfile(string partfile){
     //print_int(output);
 
 }
+  
+void DFA::init_from_cross_product(DFA* d1, DFA* d2) {
+    // Assume both DFAs are from the same manager
+    assert(d1->mgr == d2->mgr);
+    nbits = d1->nbits + d2->nbits;
+    nstates = d1->nstates * d2->nstates;
+    initbv.resize(nbits, 0);
+    bddvars = d1->bddvars;
+    for(int offset = d2->nvars; offset < d2->bddvars.size(); offset++)
+    {
+        bddvars.push_back(d2->bddvars[offset]);
+    }
+    for (int i = 0; i < d1->nbits; i++) {
+        initbv[i] = d1->initbv[i];
+    }
+    for (int i = 0; i < d2->nbits; i++) {
+        initbv[i+d1->nbits] = d2->initbv[i];
+    }
+
+    input = d1->input;
+    input.insert(input.end(), d2->input.begin(), d2->input.end());
+    output = d1->output;
+    output.insert(output.end(), d2->output.begin(), d2->output.end());
+
+    // Set final states
+    finalstatesBDD = d1->finalstatesBDD & d2->finalstatesBDD;
+    finalstates.resize(nstates, 0);
+    for (int i = 0; i < d1->nstates; i++) {
+        for (int j = 0; j < d2->nstates; j++) {
+            int state_idx = i * d2->nstates + j;
+            if (d1->finalstates[i] == 1 && d2->finalstates[j] == 1) {
+                finalstates[state_idx] = 1;
+            }
+        }
+    }
+
+    // Update transitions 
+    for (int i = 0; i < d1->nbits; i++) {
+        res.push_back(d1->res[i]);
+    }
+    for(int j = 0; j < d2->nbits; j++){
+        res.push_back(d2->res[j]);
+    }
+}
+
 
 void DFA::read_from_file(string filename){
 ifstream f(filename.c_str());

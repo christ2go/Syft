@@ -16,6 +16,7 @@ class DFA
 
         void initialize(std::string filename, std::string partfile, bool partial_observability);
         //void initialize(std::string filename, std::string partfile, Cudd& manager);
+        void init_from_cross_product(DFA* d1, DFA* d2);
         std::vector<item> bdd;
         void print_vec( std::vector <item> & v );
         void construct_bdd();
@@ -49,6 +50,8 @@ class DFA
 	void construct_from_comp_front(std::string filename);
 	void construct_from_comp_back(vbdd& S2S, vbdd& S2P, vbdd& Svars, vbdd& Ivars, vbdd& Ovars, std::vector<int> IS);
 	void complement();
+  
+  // A function to construct the product of two DFAs 
 
     protected:
 	std::vector<int> behaviour;

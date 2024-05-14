@@ -31,21 +31,23 @@ int main(int argc, char ** argv){
     clock_t c_start = clock();
     auto t_start = chrono::high_resolution_clock::now();
     string filename;
+    string filenamebackup;
     string partfile;
     string autfile;
     string starting_player;
     string observability;
     string spec_type;
-    if(argc != 6){
-        cout<<"Usage: ./Syft DFAfile Partfile Starting_player(0: system, 1: environment) Observability(partial, full) SpecType(dfa, cordfa)"<<endl;
+    if(argc != 7){
+        cout<<"Usage: ./Syft DFAfileMain DFAfileBackup Partfile Starting_player(0: system, 1: environment) Observability(partial, full) SpecType(dfa, cordfa)"<<endl;
         return 0;
     }
     else{
         filename = argv[1];
-        partfile = argv[2];
-        starting_player = argv[3];
-	observability = argv[4];
-	spec_type = argv[5];
+        filenamebackup = argv[2];
+        partfile = argv[3];
+        starting_player = argv[4];
+	observability = argv[5];
+	spec_type = argv[6];
     }
 
     bool partial_observability;
@@ -62,7 +64,9 @@ int main(int argc, char ** argv){
     bool cordfa_spec;
 
     if (spec_type == "dfa")
-      cordfa_spec = false;
+    {
+        cordfa_spec = false;
+    }    
     else if (spec_type == "cordfa")
       cordfa_spec = true;
     else {
@@ -75,7 +79,7 @@ int main(int argc, char ** argv){
 
     unique_ptr<syn> test =
       cordfa_spec
-      ? make_unique<CoRDFA_syn>(move(mgr), autfile, partfile)
+      ? make_unique<CoRDFA_syn>(move(mgr), filenamebackup, autfile, partfile)
       : make_unique<syn>(move(mgr), autfile, partfile, partial_observability);
     
     clock_t c_dfa_end = clock();
