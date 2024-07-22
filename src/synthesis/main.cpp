@@ -106,18 +106,6 @@ vector<string> get_DFAFiles(string LTLFile, string Partfile, int pfol) {
   return {mainDFA, backupDFA};
 }
 
-string get_DFAfile(string LTLFfile){
-    string FOL = LTLFfile+".mona";
-    string LTLF2FOL = "./ltlf2fol NNF "+LTLFfile+" >"+FOL;
-    system(LTLF2FOL.c_str());
-
-    string DFA = LTLFfile+".dfa";
-    string FOL2DFA = "mona -u -xw "+FOL+" >"+DFA;
-    system(FOL2DFA.c_str());
-
-    return DFA;
-}
-
 int main(int argc, char ** argv){
     clock_t c_start = clock();
     auto t_start = chrono::high_resolution_clock::now();
@@ -143,14 +131,14 @@ int main(int argc, char ** argv){
 
     int cordfa_spec;
 
-    if (spec_type == "dfa")
+    if (spec_type == "belief")
         cordfa_spec = 0;
-    else if (spec_type == "cordfa")
+    else if (spec_type == "direct")
       cordfa_spec = 1;
     else if (spec_type == "mso")
       cordfa_spec = 2;
     else {
-      cout << "SpecType should be one of: mso, dfa, cordfa" << endl;
+      cout << "SpecType should be one of: belief, direct, mso" << endl;
       return 0;
     }
     #ifdef BUILD_DEBUG

@@ -18,13 +18,13 @@
 # CUDD_INCLUDE_DIRS The location of CUDD headers
 
 # Get hint from environment variable (if any)
+
+set(CUDD_ROOT "$ENV{HOME}/install")
 if(NOT CUDD_ROOT AND DEFINED ENV{CUDD_ROOT})
 	set(CUDD_ROOT "$ENV{CUDD_ROOT}" CACHE PATH "CUDD base directory location (optional, used for nonstandard installation paths)")
 	mark_as_advanced(CUDD_ROOT)
 endif()
 
-#set(CUDD_ROOT "$ENV{HOME}/install")
-set(CUDD_ROOT "/usr/local")
 # Search path for nonstandard locations
 if(CUDD_ROOT)
 	set(CUDD_INCLUDE_PATH PATHS "${CUDD_ROOT}/include" NO_DEFAULT_PATH)
