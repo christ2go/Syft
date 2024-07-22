@@ -50,17 +50,23 @@ class DFA
 	void construct_from_comp_front(std::string filename);
 	void construct_from_comp_back(vbdd& S2S, vbdd& S2P, vbdd& Svars, vbdd& Ivars, vbdd& Ovars, std::vector<int> IS);
 	void complement();
-  
-  // A function to construct the product of two DFAs 
+        void init_from_DFA(DFA *d1);
+        void dump_automaton();
+        void print_full();
+
+        void dump_automaton(const std::string &filename);
+
+        // A function to construct the product of two DFAs 
 
     protected:
 	std::vector<int> behaviour;
 	std::vector<item> smtbdd;
         void read_from_file(std::string filename); //read the ltlf formula
         void read_partfile(std::string partfile); //read the partfile
+
     private:
-	int nodes;
-	//		std::vector<std::string> variables;
+        int nodes;
+        //		std::vector<std::string> variables;
         void get_bdd();
         void recur(int index, item tmp);
         void recur_left(int index, item tmp, int v);
@@ -75,6 +81,7 @@ class DFA
         //new bdd constructer
         std::vector<vbdd> tBDD;
         vbdd try_get(int index, bool partial_observability);
+
 };
 
 #endif // DFA_H

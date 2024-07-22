@@ -15,7 +15,14 @@ SSNFA::~SSNFA() {}
 
 void SSNFA::initialize_mona(string filename, string partfile){
         read_from_file(filename);
-	init = 1;
+        #ifdef BUILD_DEBUG
+            std::cout << "Printing the initial bitvector" << std::endl;
+            for(int i = 0; i < initbv.size(); ++i) {
+                std::cout << initbv[i] << " " << std::endl;
+            }
+            std::cout << "pinted" << std::endl;
+        #endif // BUILD_DEBUG
+	    init = 1;
         nbits = nstates;
         construct_SSNFA_MONA();
         for(int i = 0; i <= nstates-1; i++){
@@ -27,19 +34,21 @@ void SSNFA::initialize_mona(string filename, string partfile){
 	}
 
         read_partfile(partfile);
-
+        #ifdef BUILD_DEBUG
+            std::cout << "Unobservable has" << unobservable.size() << endl;
+            std::cout << "Output has " << output.size() << endl;
+        #endif // BUILD_DEBUG
         initbv = vector<int>(nbits);
         int j = 0;
 
         for(int i = 0; i < nstates; i++){
-            if(i == finalstates[j]){
+            if(j < finalstates.size() && i == finalstates[j]){
                 j = j + 1;
                 initbv[i] = 1;
             }
             else{
                 initbv[i] = 0;
             }
-
         }
         BDD F = mgr->bddZero();
         F = F + bddvars[init];
@@ -105,7 +114,6 @@ void SSNFA::project_unobservables() {
   for (int v : unobservable) {
     unobservable_cube &= bddvars[v];
   }
-
   for (int j = 0; j < nstates; ++j) {
     for (int i = 0; i < nstates; ++i) {
       labels[i][j] = labels[i][j].ExistAbstract(unobservable_cube);

@@ -1,5 +1,5 @@
 #include "DFA.h"
-
+#include <cmath>
 using std::string;
 using std::ifstream;
 using std::vector;
@@ -112,11 +112,15 @@ void DFA::read_partfile(string partfile){
 
     for(int i = 1; i < variables.size(); i++){
         if(input_set.find(variables[i]) != input_set.end())
+        {
+            if(unobservable_set.find(variables[i]) != unobservable_set.end())
+	            unobservable.push_back(nbits+i-1);
             input.push_back(nbits+i-1);
+        }        
         else if(output_set.find(variables[i]) != output_set.end())
             output.push_back(nbits+i-1);
-	else if(unobservable_set.find(variables[i]) != unobservable_set.end())
-	    unobservable.push_back(nbits+i-1);
+	    else if(unobservable_set.find(variables[i]) != unobservable_set.end())
+	        unobservable.push_back(nbits+i-1);
         else if(variables[i] == "ALIVE")
             output.push_back(nbits+i-1);
         else
@@ -126,49 +130,110 @@ void DFA::read_partfile(string partfile){
     //print_int(output);
 
 }
-  
-void DFA::init_from_cross_product(DFA* d1, DFA* d2) {
-    // Assume both DFAs are from the same manager
-    assert(d1->mgr == d2->mgr);
-    nbits = d1->nbits + d2->nbits;
-    nstates = d1->nstates * d2->nstates;
-    initbv.resize(nbits, 0);
+
+void DFA::init_from_DFA(DFA* d1) {
+    nstates = d1->nstates;
+    nbits = d1->nbits;
+    nvars = d1->nvars;
+    initbv = d1->initbv; 
+    input = d1->input;
+    output = d1->output; 
     bddvars = d1->bddvars;
-    for(int offset = d2->nvars; offset < d2->bddvars.size(); offset++)
-    {
-        bddvars.push_back(d2->bddvars[offset]);
-    }
-    for (int i = 0; i < d1->nbits; i++) {
-        initbv[i] = d1->initbv[i];
-    }
-    for (int i = 0; i < d2->nbits; i++) {
-        initbv[i+d1->nbits] = d2->initbv[i];
-    }
+    
+    finalstates = d1->finalstates;
+    finalstatesBDD = d1->finalstatesBDD;
+    res = d1->res; 
+
+
+}  
+
+// w.l.o.g. assume that d2 is the belief-state automaton
+void DFA::init_from_cross_product(DFA* d1, DFA* d2) {
+    // Idea: Just use d1->input, output and map the other variables 
+    nstates = d1->nstates * d2->nstates; 
+    nbits   = d1->nbits + d2->nbits;
+    nvars   = d1->nvars;
+    initbv = d1->initbv;
+    initbv.insert(initbv.end(), d2->initbv.begin(), d2->initbv.end());
 
     input = d1->input;
-    input.insert(input.end(), d2->input.begin(), d2->input.end());
+    for(int i = 0; i < input.size(); ++i)
+        input[i] += d2->nbits;
     output = d1->output;
-    output.insert(output.end(), d2->output.begin(), d2->output.end());
+    for(int i = 0; i < output.size(); ++i)
+        output[i] += d2->nbits;
+    
 
-    // Set final states
-    finalstatesBDD = d1->finalstatesBDD & d2->finalstatesBDD;
-    finalstates.resize(nstates, 0);
-    for (int i = 0; i < d1->nstates; i++) {
-        for (int j = 0; j < d2->nstates; j++) {
-            int state_idx = i * d2->nstates + j;
-            if (d1->finalstates[i] == 1 && d2->finalstates[j] == 1) {
-                finalstates[state_idx] = 1;
-            }
-        }
+    for(int i = 0; i < d1->nbits; ++i) {
+        bddvars.push_back(d1->bddvars[i]);
+        #ifdef BUILD_DEBUG
+        std::cout << "d1 bvar " << d1->bddvars[i] << endl;
+        #endif // BUILD_DEBUG
     }
-
-    // Update transitions 
-    for (int i = 0; i < d1->nbits; i++) {
-        res.push_back(d1->res[i]);
+    for(int i = 0; i < d2->nbits; ++i) {
+        bddvars.push_back(d2->bddvars[i]);
+        #ifdef BUILD_DEBUG
+        std::cout << "d2 bvar " << d2->bddvars[i] << endl;
+        #endif
     }
-    for(int j = 0; j < d2->nbits; j++){
-        res.push_back(d2->res[j]);
+    for(int i = d1->nbits; i < d1->bddvars.size(); ++i)
+    {
+        bddvars.push_back(d1->bddvars[i]);
     }
+    // 
+    vbdd swap, insert;
+    // Berechne swap 
+    for(int j = 0; j < d2->output.size(); ++j) {
+        swap.push_back(d1->bddvars[d1->output[j]]);
+        insert.push_back(d2->bddvars[d2->output[j]]);
+        #ifdef BUILD_DEBUG
+        std::cout << "Output var (d1)" << d1->output[j] << "leads to swap" << d1->bddvars[d1->output[j]] << " " << d2->bddvars[d2->output[j]] << endl;
+        #endif
+    }
+    for(int i = 0; i < d1->input.size(); ++i) {
+        swap.push_back(d1->bddvars[d1->input[i]]);
+        insert.push_back(d2->bddvars[d2->input[i]]);
+        #ifdef BUILD_DEBUG
+        std::cout << "Input var (d1)" << d1->input[i] << "leads to swap" << d1->bddvars[d1->input[i]] << " " << d2->bddvars[d2->input[i]] << endl;
+        #endif
+    }
+    #ifdef BUILD_DEBUG
+        std::cout << swap.size() << " " << insert.size() << " <<" << endl;
+        assert(d2->input.size() == d1->input.size());   
+    #endif 
+    // Create res 
+    res = d1->res;
+    for(int i = 0; i < d2->res.size(); ++i) {
+        auto tmp = d2->res[i];        
+        res.push_back(d2->res[i].SwapVariables(insert, swap));
+    }
+    finalstatesBDD = d1->finalstatesBDD & (d2->finalstatesBDD.SwapVariables(insert, swap));
+    #ifdef BUILD_DEBUG
+    // Create function 
+    std::cout << "Printing the completed autoamton" << std::endl;
+    print_int(input);
+    print_int(output);
+    print_int(unobservable);
+      std::cout << "Printing bdd vars" << std::endl;
+    for(int i = 0; i < bddvars.size(); ++i)
+                std::cout << bddvars[i] << std::endl;
+        std::cout << "Printing input vars" << std::endl;
+    for(int i = 0; i < input.size(); ++i)
+                std::cout << bddvars[input[i]] << std::endl;
+    std::cout << "Printing output vars" << std::endl;
+    for(int i = 0; i < output.size(); ++i)
+                std::cout << bddvars[output[i]]  << std::endl;
+    std::cout << "State variables" << std::endl;
+    for(int i = 0; i < nbits; ++i)
+        std::cout << bddvars[i] << std::endl;
+    std::cout << "Initial bit vector " << std::endl;
+    print_int(initbv);
+    std::cout << "Printing transition functions " << std::endl;
+    for(int i = 0; i < nbits; ++i)
+        std::cout << res[i] << std::endl;
+    std::cout << "Final states" << std::endl;
+    std::cout << finalstatesBDD << std::endl;
+    #endif
 }
 
 
@@ -322,7 +387,7 @@ void DFA::construct_from_comp_back(vbdd& S2S, vbdd& S2P, vbdd& Svars, vbdd& Ivar
   for (int i=0; i<Ovars.size(); i++){
     output.push_back(i+nbits+Ivars.size());
   }
-
+    //bdd2dot();
 }
 
 void DFA::recur(int index, item tmp){
@@ -422,11 +487,77 @@ string DFA::state2bin(int n){
 
 void DFA::bdd2dot(){
     for(int i = 0; i < res.size(); i++){
-        string filename = to_string(i);
+        string filename = "var_"+to_string(i);
         dumpdot(res[i], filename);
     }
 }
 
+void DFA::dump_automaton() {
+    dump_automaton("automaton.txt");
+}
+
+void DFA::dump_automaton(const std::string& filename) {
+    std::ofstream file(filename);
+
+    if (!file.is_open()) {
+        std::cerr << "Error opening file for writing." << std::endl;
+        return;
+    }
+    file << nbits << " " << input.size() << " " << output.size() << endl;
+    // Inputs 
+    for(int i = 0; i < input.size(); ++i)
+           file << bddvars[input[i]] << " ";
+    file << endl;  
+    // Outputs 
+    for(int i = 0; i < output.size(); ++i)
+        file << bddvars[output[i]] << " ";
+    file << endl;
+    // Print state variables 
+    for(int i = 0; i < nbits; ++i)
+        file << bddvars[i] << " ";
+    file << endl;
+
+    // Dump the transition function (res)
+    for(auto& bdd : res) {
+        file << bdd << endl;
+    }
+    // Dump the finalstates BDD 
+    file << finalstatesBDD << endl;
+    // Dump the initial states 
+    for(int i = 0; i < nbits; ++i)
+        file << initbv[i] << " ";
+    file << endl;
+    
+}
+
+void DFA::print_full() {
+    cout << bddvars.size() << " " << nvars;
+    cout << " " << nbits << " ";
+    cout <<  nstates << " " << input.size() << " " << output.size() << endl;
+    // Inputs 
+    for(int i = 0; i < input.size(); ++i)
+           cout << bddvars[input[i]] << " ";
+    cout << endl;  
+    // Outputs 
+    for(int i = 0; i < output.size(); ++i)
+        cout << bddvars[output[i]] << " ";
+    cout << endl;
+    // Print state variables 
+    for(int i = 0; i < nbits; ++i)
+        cout << bddvars[i] << " ";
+    cout << endl;
+
+    // Dump the transition function (res)
+    for(auto& bdd : res) {
+        cout << bdd << endl;
+    }
+    // Dump the finalstates BDD 
+    cout << finalstatesBDD << endl;
+    // Dump the initial states 
+    for(int i = 0; i < nbits; ++i)
+        cout << initbv[i] << " ";
+    cout << endl;
+}
 
 //return positive or nagative bdd variable index
 BDD DFA::var2bddvar(int v, int index){
@@ -474,8 +605,9 @@ void DFA::construct_bdd_new(){
         bddvars.push_back(b);
         //dumpdot(b, to_string(i));
     }
-   // std::cout<<"constructing bdd with "<<bddvars.size()<<"variables"<<std::endl;
-
+    #ifdef BUILD_DEBUG
+        std::cout<<"constructing bdd with "<<bddvars.size()<<"variables"<<std::endl;
+    #endif
     for(int i = 0; i < nbits; i++){
         BDD d = mgr->bddZero();
         res.push_back(d);
@@ -506,7 +638,7 @@ void DFA::construct_bdd_new(){
             res[i] = res[i] + tmp;
             //dumpdot(res[i], "res "+to_string(i));
         }
-        //dumpdot(res[i], "res "+to_string(i));
+        dumpdot(res[i], "res "+to_string(i));
     }
 
     finalstatesBDD = mgr->bddZero();
@@ -517,6 +649,10 @@ void DFA::construct_bdd_new(){
 }
 
 void DFA::construct_bdd_belief_state(){
+    #ifdef BUILD_DEBUG
+        std::cout << "constructing belief state now" << std::endl;
+        std::cout << "have " << output.size() << " many output variables" << std::endl;
+    #endif
     // belief-state space has one state variable per state of the automaton
     for(int i = 0; i < nstates+nvars; i++){
         BDD b = mgr->bddVar();

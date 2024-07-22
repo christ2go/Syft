@@ -17,6 +17,43 @@ using namespace std;
 #define MAXN 1000000
 
 
+void ltlf2fol_with_projection(ltl_formula* unproj, ltl_formula* proj,const std::set<string>& projectables) {
+  int c = 1;
+  string res; 
+  set<string> P1 = get_alphabet (unproj);
+  set<string> P2 = get_alphabet (proj);
+  P1.insert(P2.begin(), P2.end());  // Merge into one alphabet set 
+  if(!P2.empty()) {
+    cout<<"m2l-str;"<<endl;
+    cout<<"var2 ";
+    set<string>::iterator it = P1.begin ();
+    // cout<<toupper(*it);
+    cout<<up(*it);
+    it++;
+    while (it != P1.end ()){
+      cout<<", "<<up(*it);
+      it++;
+    }
+    cout<<";"<<endl;
+  }
+  std::cout << "# " << projectables.size() << " projectables" << std::endl;
+  std::cout << "(( ";
+  res = trans_fol(unproj, 0, c);
+  std::cout << res;
+  std::cout << ") & (";
+    for(const auto& var : projectables) {
+      std::cout << "(all2 " << up(var) << " : (";
+    }
+    c = 1;
+    res = trans_fol(proj, 0, c);
+    std::cout << res << std::endl;
+    for(const auto& var : projectables) {
+      std::cout << ") )";
+    }
+  std::cout << ") );" << endl;
+
+}
+
 void ltlf2fol (ltl_formula *root)
 {
   int c = 1;
@@ -210,7 +247,7 @@ string trans_fol(ltl_formula* root, int t, int& c){
         case eFALSE:
           res += "(false)";
           break;
-        case 3:
+        case eLITERAL: 
           if (t == 0)
             ts = "("+to_string(t);
           else

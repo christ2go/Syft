@@ -12,6 +12,10 @@ class CoRDFA_syn : public syn
   CoRDFA_syn(std::shared_ptr<Cudd> m, std::string filename, std::string secondfile, std::string partfile);
   virtual ~CoRDFA_syn();
   void initializer(std::unique_ptr<SSNFA>& ssnfa);
+ private:
+	std::unique_ptr<SSNFA> bddBackups;
+
+  
 };
 
 #endif // CORDFA_SYN_H

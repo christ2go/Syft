@@ -45,6 +45,8 @@ std::string get_var (ltl_formula*);
 
 void ltlf2fol (ltl_formula*);
 
+void ltlf2fol_with_projection (ltl_formula*, ltl_formula*, const std::set<std::string>&);
+
 std::string trans_fol (ltl_formula*, int, int&);
 
 void printvars (ltl_formula*);

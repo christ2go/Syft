@@ -11,6 +11,8 @@ class syn
 {
  public:
         syn(std::shared_ptr<Cudd> m, std::string filename, std::string partfile, bool partial_observability);
+        syn(shared_ptr<Cudd> m, string backupfile, string mainfile, string partfile, bool partial_observability);
+
 	syn(std::shared_ptr<Cudd> m, std::unique_ptr<DFA> d);
 	syn();
 	bool realizablity_sys(std::unordered_map<unsigned int, BDD>& IFstrategy);
@@ -19,6 +21,8 @@ class syn
 	void printBDDSat(BDD b);
 
 	std::unique_ptr<DFA> bdd;
+	std::unique_ptr<DFA> bddMain;
+	std::unique_ptr<DFA> bddBackup;
 
  protected:
         std::shared_ptr<Cudd> mgr;
@@ -28,6 +32,7 @@ class syn
         std::vector<BDD> Wprime;
 
  private:
+        
         bool fixpoint();
         std::string state2bin(int n);
         BDD state2bdd(int s);

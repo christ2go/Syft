@@ -10,24 +10,42 @@ using std::vector;
 
 CoRDFA_syn::CoRDFA_syn(shared_ptr<Cudd> m, string filename, string filenonbackup, string partfile)
 {
-    std::cout << " A " << filename << std::endl;
-    unique_ptr<SSNFA> ssnfa = make_unique<SSNFA>(m);
-    ssnfa->initialize_mona(filename, partfile);
-    mgr = m;
-    std::cout << " B" << std::endl;
-    ssnfa->project_unobservables();
-    ssnfa->complement();
-    std::cout << " C" << std::endl;
-    initializer(ssnfa);
-    std::cout << " D" << std::endl;
-    unique_ptr<DFA> dfa = make_unique<DFA>(m);
-    dfa->initialize(filenonbackup, partfile, false);
+    #ifdef BUILD_DEBUG
+    std::cout << "Starting cordfa syn" << std::endl;
+    #endif // BUILD_DEBUG
+    bddMain = make_unique<DFA>(m);
+    bddMain->initialize(filenonbackup, partfile, false);
 
-    unique_ptr<DFA> finaldfa = make_unique<DFA>(m);
-    finaldfa->init_from_cross_product(ssnfa.get(), dfa.get()); 
-    std::cout << "Cross has " << finaldfa->nstates << " states" << std::endl;
-    bdd = move(ssnfa);
+    bddBackups = make_unique<SSNFA>(m);
+    bddBackups->initialize_mona(filename, partfile);
+
+    mgr = m;
+    bddBackups->project_unobservables();
+    bddBackups->complement();
+    for (int i = 0; i < bddBackups->nstates; ++i) {
+      bddBackups->res.push_back(mgr->bddZero());
+      for (int j = 0; j < bddBackups->nstates; ++j) {
+        BDD trans = bddBackups->bddvars[j] & bddBackups->labels[i][j];
+        bddBackups->res[i] |= trans;
+      }
+    }
+    bddBackups->dump_automaton("ssnfa");
+    bdd = make_unique<DFA>(m);
+    // Adjust the initial state (we need this, since otherwise the two automata are out of sync)
+    // Assumes w.l.o.g. that the DFA from MONA has initial state 0 
     
+    bddMain->init = 1;
+    bddMain->initbv[bddMain->initbv.size()-1] = 1;
+    bddMain->dump_automaton("dfa");
+    bddBackups->dump_automaton("ssnfa");
+    bdd->init_from_cross_product(bddMain.release(), bddBackups.release());
+    bdd->dump_automaton("cross");
+   //initializer(ssnfa);
+    syn::initializer();
+    //auto bdd_before_rev = make_unique<DFA>(m);
+    //bdd_before_rev->initialize(filename, partfile, false);
+    //bdd_before_rev->dump_automaton("toreverse.txt");
+
 }
 
 CoRDFA_syn::~CoRDFA_syn() {}
@@ -41,31 +59,4 @@ void CoRDFA_syn::initializer(unique_ptr<SSNFA>& ssnfa){
   W.push_back(ssnfa->finalstatesBDD);
   Wprime.push_back(ssnfa->finalstatesBDD);
   cur = 0;
-
-  for (int i = 0; i < ssnfa->nstates; ++i) {
-    ssnfa->res.push_back(mgr->bddZero());
-    for (int j = 0; j < ssnfa->nstates; ++j) {
-          std::cout << "i: " << i << " " << ssnfa->nstates << std::endl;
-          std::cout << "j: " << j << " " << ssnfa->nstates << std::endl;
-
-      BDD trans = ssnfa->bddvars[j] & ssnfa->labels[i][j];
-      ssnfa->res[i] |= trans;
-    }
-  }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

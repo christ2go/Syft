@@ -15,6 +15,97 @@ namespace chrono = std::chrono;
 using std::unique_ptr;
 using std::make_unique;
 
+/**
+ */
+vector<string> get_DFAFiles(string LTLFile, string Partfile, int pfol) {
+
+  // For MSO just run ltlf2fol with certaina arguments
+  if(pfol == 2) {
+    string FOL = LTLFile+".fol";
+    string LTLF2FOL = "./ltlf2fol NNF "+LTLFile+" "+Partfile+" >"+FOL;
+    if(system(LTLF2FOL.c_str())) {
+      cerr << "Error running ltlf2fol for MSO" << endl;
+      exit(1);
+    }
+    string DFA = LTLFile+".dfa";
+    string FOL2DFA = "mona -u -xw "+FOL+" >"+DFA;
+    if(system(FOL2DFA.c_str())) {
+      cerr << "Error running mona for MSO" << endl;
+      exit(1);
+    }
+
+    return {DFA};
+  }
+
+  // Read in the file and create the two files 
+  string mainf = LTLFile+".main";
+  string backupf = LTLFile+".backup";
+  std::ofstream outputFile1(mainf), outputFile2(backupf);
+  std::ifstream ltlfile(LTLFile);
+  string line;
+
+  if (std::getline(ltlfile, line)) outputFile1 << line << std::endl; else {
+    cerr << "Expected two lines in .ltlf file" << endl;
+    exit(1);
+  };
+  outputFile1.close();
+  if (std::getline(ltlfile, line)) {
+    if(pfol) {
+      outputFile2 << "~(" <<  line << ")" << std::endl; 
+    } else {
+      outputFile2 << line << std::endl; 
+    }
+  } else {
+    cerr << "Expected two lines in .ltlf file" << endl;
+    exit(1);
+  };
+  outputFile2.close();
+
+  string FOLmain = mainf+".fol";
+  string FOLBackup = backupf+".fol";
+  // Run 
+  string LTLF2FOLmain = "./ltlf2fol NNF "+mainf+" > "+FOLmain;
+  cout << LTLF2FOLmain << endl;
+  int x = 0;
+  if(system(LTLF2FOLmain.c_str())) {
+    cerr << "Error running ltlf2fol for main" << " " << x << endl;
+    exit(1);
+  }
+  string LTLF2FOLbackup;
+  if(pfol) {
+    LTLF2FOLbackup  = "./ltlf2pfol "+backupf+" >"+FOLBackup;
+  }else{
+    LTLF2FOLbackup  = "./ltlf2fol NNF "+backupf+" >"+FOLBackup;
+  } 
+  std::cout << LTLF2FOLbackup.c_str() << endl;
+  if(system(LTLF2FOLbackup.c_str())) {
+    cerr << "Error running ltlf2fol for backup" << endl;
+    exit(1);
+  }
+
+  // Run MONA for both 
+  string mainDFA = mainf+".mona";
+  string monaMain = "mona -u -xw " +  FOLmain + " > "+mainDFA;
+  if(system(monaMain.c_str())) {
+    cerr << "Error running mona for main" << endl;
+    exit(1);
+  }
+  string backupDFA = backupf+".mona";
+  string monaBackup = "mona -u -xw " +  FOLBackup + " > "+backupDFA;
+  std::cout << monaBackup << endl;
+  if(system(monaBackup.c_str())) {
+    cerr << "Error running mona for backup" << endl;
+    exit(1);
+  }
+  // Clean Up: Remove all generated files but for the dfa 
+  std::remove(mainf.c_str());
+  std::remove(backupf.c_str());
+  std::remove(FOLmain.c_str());
+  std::remove(FOLBackup.c_str());
+
+  return {mainDFA, backupDFA};
+}
+
 string get_DFAfile(string LTLFfile){
     string FOL = LTLFfile+".mona";
     string LTLF2FOL = "./ltlf2fol NNF "+LTLFfile+" >"+FOL;
@@ -37,53 +128,54 @@ int main(int argc, char ** argv){
     string starting_player;
     string observability;
     string spec_type;
-    if(argc != 7){
-        cout<<"Usage: ./Syft DFAfileMain DFAfileBackup Partfile Starting_player(0: system, 1: environment) Observability(partial, full) SpecType(dfa, cordfa)"<<endl;
+    if(argc != 5){
+        cout<<"Usage: ./Syft LTLFFile Partfile Starting_player(0: system, 1: environment) SpecType(dfa, cordfa, mso)"<<endl;
         return 0;
     }
     else{
         filename = argv[1];
-        filenamebackup = argv[2];
-        partfile = argv[3];
-        starting_player = argv[4];
-	observability = argv[5];
-	spec_type = argv[6];
+        partfile = argv[2];
+        starting_player = argv[3];
+	spec_type = argv[4];
     }
 
-    bool partial_observability;
+    bool partial_observability = true;
 
-    if (observability == "partial")
-      partial_observability = true;
-    else if (observability == "full")
-      partial_observability = false;
-    else {
-      cout << "Observability should be one of: partial, full" << endl;
-      return 0;
-    }
-
-    bool cordfa_spec;
+    int cordfa_spec;
 
     if (spec_type == "dfa")
-    {
-        cordfa_spec = false;
-    }    
+        cordfa_spec = 0;
     else if (spec_type == "cordfa")
-      cordfa_spec = true;
+      cordfa_spec = 1;
+    else if (spec_type == "mso")
+      cordfa_spec = 2;
     else {
-      cout << "SpecType should be one of: dfa, cordfa" << endl;
+      cout << "SpecType should be one of: mso, dfa, cordfa" << endl;
       return 0;
     }
+    #ifdef BUILD_DEBUG
+    cout << "Creating DFA File" << endl;
+    #endif
+    vector<string> files = get_DFAFiles(filename, partfile, cordfa_spec);
 
+    #ifdef BUILD_DEBUG
+    cout << "Creating cudd mgr" << endl;
+    #endif
     shared_ptr<Cudd> mgr = make_shared<Cudd>();
 
-    unique_ptr<syn> test =
-      cordfa_spec
-      ? make_unique<CoRDFA_syn>(move(mgr), filenamebackup, filename, partfile)
-      : make_unique<syn>(move(mgr), filename, partfile, partial_observability);
-    
+    unique_ptr<syn> test; 
+    if(cordfa_spec == 0)
+      test = make_unique<syn>(move(mgr), files[1], files[0], partfile, partial_observability);
+    else if(cordfa_spec == 1) 
+      test = make_unique<CoRDFA_syn>(move(mgr), files[1], files[0], partfile);
+    else if(cordfa_spec == 2)
+      test = make_unique<syn>(move(mgr), files[0], partfile, false);
+
+    cout << "Syn initialised." << endl;
+
     clock_t c_dfa_end = clock();
     auto t_dfa_end = chrono::high_resolution_clock::now();
-    std::cout << "DFA CPU time used: "
+    std::cout << "DFA CPU tim e used: "
               << 1000.0 * (c_dfa_end-c_start) / CLOCKS_PER_SEC << " ms\n"
               << "DFA wall clock time passed: "
               << std::chrono::duration<double, std::milli>(t_dfa_end-t_start).count()
@@ -98,9 +190,9 @@ int main(int argc, char ** argv){
         res = test->realizablity_sys(strategy);
 
     if(res)
-        cout<<"realizable"<<endl;
+        cout<<"Realizable"<<endl;
     else
-        cout<<"unrealizable"<<endl;
+        cout<<"Unrealizable"<<endl;
     clock_t c_end = clock();
     auto t_end = chrono::high_resolution_clock::now();
     std::cout << "Total CPU time used: "
