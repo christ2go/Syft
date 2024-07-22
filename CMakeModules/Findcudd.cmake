@@ -18,8 +18,6 @@
 # CUDD_INCLUDE_DIRS The location of CUDD headers
 
 # Get hint from environment variable (if any)
-
-set(CUDD_ROOT "$ENV{HOME}/install")
 if(NOT CUDD_ROOT AND DEFINED ENV{CUDD_ROOT})
 	set(CUDD_ROOT "$ENV{CUDD_ROOT}" CACHE PATH "CUDD base directory location (optional, used for nonstandard installation paths)")
 	mark_as_advanced(CUDD_ROOT)
@@ -32,7 +30,7 @@ if(CUDD_ROOT)
 endif()
 
 find_path(CUDD_INCLUDE_DIRS NAMES cudd.h HINTS ${CUDD_INCLUDE_PATH})
-find_library(CUDD_LIBRARIES NAMES cudd CUDDVC-3.0.0 HINTS ${CUDD_LIBRARY_PATH})
+find_library(CUDD_LIBRARIES NAMES cudd CUDDVC-2.5.0 HINTS ${CUDD_LIBRARY_PATH})
 
 include(FindPackageHandleStandardArgs)
 
