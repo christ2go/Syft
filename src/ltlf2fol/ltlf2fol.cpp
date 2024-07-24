@@ -23,7 +23,7 @@ void ltlf2fol_with_projection(ltl_formula* unproj, ltl_formula* proj,const std::
   set<string> P1 = get_alphabet (unproj);
   set<string> P2 = get_alphabet (proj);
   P1.insert(P2.begin(), P2.end());  // Merge into one alphabet set 
-  if(!P2.empty()) {
+  if(!P1.empty()) {
     cout<<"m2l-str;"<<endl;
     cout<<"var2 ";
     set<string>::iterator it = P1.begin ();
