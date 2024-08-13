@@ -10,8 +10,8 @@ Before installing, please make sure that g++, libtool, automake and cmake are in
    CUDD can be found in the directory ``external/cudd``, from which the build instructions can be executed.
    Otherwise, it can also be cloned from the repository ``https://github.com/KavrakiLab/cudd.git``.
 0.2 Install CUDD:
-    ./configure --enable-silent-rules --enable-obj --enable-dddmp --prefix=[install location]
-    sudo make install
+    ``./configure --enable-silent-rules --enable-obj --enable-dddmp --prefix=[install location]``
+    ``sudo make install``
 
     If you get an error about aclocal, this might be due to either
     a. Not having automake:
