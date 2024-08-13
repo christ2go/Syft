@@ -1,4 +1,4 @@
-Compilation Instructions for Syft using CMake
+# Compilation Instructions for Syft using CMake
 
 These instructions were tested on Ubuntu 24.04.
 They also work on RHEL 8, and should work on most linux distributions (with minor adjustments).
@@ -60,3 +60,7 @@ To do this, run cmake with the additional flag ``cmake .. -DCUDD_ROOT=path_to_cu
 3. Compile using the generated makefile:
 
    cmake --build .
+
+# Running tests 
+
+The tests can be executed (i.e. for ``ms0``) by running ``python3 runTests-cross.py mso`` from the ``scripts/runTests`` directory.
