@@ -7,7 +7,7 @@ Before installing, please make sure that g++, libtool, autotools and cmake are i
 ==== Install CUDD ====
 
 0.1 Make sure CUDD is installed. 
-   CUDD can be found in the directory ´´external/cudd``, from which the build instructions can be executed.
+   CUDD can be found in the directory ``external/cudd``, from which the build instructions can be executed.
    Otherwise, it can also be cloned from the repository ``https://github.com/KavrakiLab/cudd.git``.
 0.2 Install CUDD:
     ./configure --enable-silent-rules --enable-obj --enable-dddmp --prefix=[install location]
