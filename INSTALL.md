@@ -2,7 +2,7 @@ Compilation Instructions for Syft using CMake
 
 These instructions were tested on Ubuntu 24.04.
 They also work on RHEL 8, and should work on most linux distributions (with minor adjustments).
-Before installing, please make sure that g++, libtool, autotools and cmake are installed, otherwise install them using ``apt``.
+Before installing, please make sure that g++, libtool, automake and cmake are installed, otherwise install them using ``apt``.
 
 ==== Install CUDD ====
 
