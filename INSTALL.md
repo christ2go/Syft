@@ -4,6 +4,8 @@ These instructions were tested on Ubuntu 24.04.
 They also work on RHEL 8, and should work on most linux distributions (with minor adjustments).
 Before installing, please make sure that g++, libtool, automake and cmake are installed, otherwise install them using ``apt``.
 
+On Ubuntu 24.04, you can also just run ``build.sh``.
+
 ==== Install CUDD ====
 
 0.1 Make sure CUDD is installed. 
