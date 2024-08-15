@@ -147,7 +147,10 @@ void DFA::init_from_DFA(DFA* d1) {
 
 }  
 
-// w.l.o.g. assume that d2 is the belief-state automaton
+/**
+ * This function constructs the synchronous product (in code called cross product) of two DFAs.
+ * It implements Definition 7 from the paper. 
+ */
 void DFA::init_from_cross_product(DFA* d1, DFA* d2) {
     // Idea: Just use d1->input, output and map the other variables 
     nstates = d1->nstates * d2->nstates; 

@@ -7,21 +7,28 @@ using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 using std::vector;
-
+/**
+ * This method implements the construction described in Sect 4. 
+ * The synchronous product is implemented in the DFA class.
+ * The complementation and projection of unobservables is done in the SSNFA class.
+ */
 CoRDFA_syn::CoRDFA_syn(shared_ptr<Cudd> m, string filename, string filenonbackup, string partfile)
 {
     #ifdef BUILD_DEBUG
     std::cout << "Starting cordfa syn" << std::endl;
     #endif // BUILD_DEBUG
+    mgr = m;
+    // Read the DFA from MONA for main formula
     bddMain = make_unique<DFA>(m);
     bddMain->initialize(filenonbackup, partfile, false);
 
+    // Read the DFA from MONA for backup formula
+    // Do the complementation and project the unobservables out
     bddBackups = make_unique<SSNFA>(m);
     bddBackups->initialize_mona(filename, partfile);
-
-    mgr = m;
     bddBackups->project_unobservables();
     bddBackups->complement();
+    // Reverse the transitions
     for (int i = 0; i < bddBackups->nstates; ++i) {
       bddBackups->res.push_back(mgr->bddZero());
       for (int j = 0; j < bddBackups->nstates; ++j) {
@@ -31,6 +38,7 @@ CoRDFA_syn::CoRDFA_syn(shared_ptr<Cudd> m, string filename, string filenonbackup
     }
     bddBackups->dump_automaton("ssnfa");
     bdd = make_unique<DFA>(m);
+
     // Adjust the initial state (we need this, since otherwise the two automata are out of sync)
     // Assumes w.l.o.g. that the DFA from MONA has initial state 0 
     
@@ -40,12 +48,8 @@ CoRDFA_syn::CoRDFA_syn(shared_ptr<Cudd> m, string filename, string filenonbackup
     bddBackups->dump_automaton("ssnfa");
     bdd->init_from_cross_product(bddMain.release(), bddBackups.release());
     bdd->dump_automaton("cross");
-   //initializer(ssnfa);
+   // Initialize standard synthesis
     syn::initializer();
-    //auto bdd_before_rev = make_unique<DFA>(m);
-    //bdd_before_rev->initialize(filename, partfile, false);
-    //bdd_before_rev->dump_automaton("toreverse.txt");
-
 }
 
 CoRDFA_syn::~CoRDFA_syn() {}

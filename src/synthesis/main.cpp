@@ -16,27 +16,34 @@ using std::unique_ptr;
 using std::make_unique;
 
 /**
+ * This function handles the main steps, to hide running MONA, etc. From the user. 
+ * It takes in the name of the LTL file, the partition file and the algorithm to use (spec_type: 0 = direct, 1 = belief, 2 = mso).
  */
-vector<string> get_DFAFiles(string LTLFile, string Partfile, int pfol) {
+vector<string> get_DFAFiles(string LTLFile, string Partfile, int spec_type) {
 
-  // For MSO just run ltlf2fol with certaina arguments
-  if(pfol == 2) {
+  // For the MSO approach (Sect 7) just run ltlf2fol with two file arguments, then it generates the translation 
+  // of varphi_m & \forall U_1. \dots \forall U_n. \varphi_b as the output file.
+  if(spec_type == 2) {
+    // Generate the FOL file
     string FOL = LTLFile+".fol";
+    // Translate to mso
     string LTLF2FOL = "./ltlf2fol NNF "+LTLFile+" "+Partfile+" >"+FOL;
     if(system(LTLF2FOL.c_str())) {
       cerr << "Error running ltlf2fol for MSO" << endl;
       exit(1);
     }
+
     string DFA = LTLFile+".dfa";
+    // Create the DFA
     string FOL2DFA = "mona -u -xw "+FOL+" >"+DFA;
     if(system(FOL2DFA.c_str())) {
       cerr << "Error running mona for MSO" << endl;
       exit(1);
     }
-
+    // We return only a single file-name, as this is the DFA we do  synthesis on.
     return {DFA};
   }
-
+  // For the other two, we need to create two files
   // Read in the file and create the two files 
   string mainf = LTLFile+".main";
   string backupf = LTLFile+".backup";
@@ -49,8 +56,9 @@ vector<string> get_DFAFiles(string LTLFile, string Partfile, int pfol) {
     exit(1);
   };
   outputFile1.close();
+  // For direct approach, as described in Sect 7, we need to create a DFA for \lnot \varphi_b
   if (std::getline(ltlfile, line)) {
-    if(pfol) {
+    if(spec_type) {
       outputFile2 << "~(" <<  line << ")" << std::endl; 
     } else {
       outputFile2 << line << std::endl; 
@@ -60,7 +68,7 @@ vector<string> get_DFAFiles(string LTLFile, string Partfile, int pfol) {
     exit(1);
   };
   outputFile2.close();
-
+  // Generate the FOL files for main
   string FOLmain = mainf+".fol";
   string FOLBackup = backupf+".fol";
   // Run 
@@ -71,8 +79,10 @@ vector<string> get_DFAFiles(string LTLFile, string Partfile, int pfol) {
     cerr << "Error running ltlf2fol for main" << " " << x << endl;
     exit(1);
   }
+
   string LTLF2FOLbackup;
-  if(pfol) {
+  // Depending on specification either translate the formula to FOL or the equivalent pure-past-ltlf formula to FOL
+  if(spec_type) {
     LTLF2FOLbackup  = "./ltlf2pfol "+backupf+" >"+FOLBackup;
   }else{
     LTLF2FOLbackup  = "./ltlf2fol NNF "+backupf+" >"+FOLBackup;
@@ -102,7 +112,7 @@ vector<string> get_DFAFiles(string LTLFile, string Partfile, int pfol) {
   std::remove(backupf.c_str());
   std::remove(FOLmain.c_str());
   std::remove(FOLBackup.c_str());
-
+  // Return the two generated DFA (files)
   return {mainDFA, backupDFA};
 }
 
@@ -116,6 +126,7 @@ int main(int argc, char ** argv){
     string starting_player;
     string observability;
     string spec_type;
+    // Check for correct argument count
     if(argc != 5){
         cout<<"Usage: ./Syft LTLFFile Partfile Starting_player(0: system, 1: environment) SpecType(dfa, cordfa, mso)"<<endl;
         return 0;
@@ -151,13 +162,15 @@ int main(int argc, char ** argv){
     #endif
     shared_ptr<Cudd> mgr = make_shared<Cudd>();
 
-    unique_ptr<syn> test; 
+    unique_ptr<syn> test;
+
+    // Initialize the synthesis object, depending on the specification type
     if(cordfa_spec == 0)
-      test = make_unique<syn>(move(mgr), files[1], files[0], partfile, partial_observability);
+      test = make_unique<syn>(move(mgr), files[1], files[0], partfile, partial_observability); // belief-state
     else if(cordfa_spec == 1) 
-      test = make_unique<CoRDFA_syn>(move(mgr), files[1], files[0], partfile);
+      test = make_unique<CoRDFA_syn>(move(mgr), files[1], files[0], partfile);  // direct
     else if(cordfa_spec == 2)
-      test = make_unique<syn>(move(mgr), files[0], partfile, false);
+      test = make_unique<syn>(move(mgr), files[0], partfile, false); // mso
 
     cout << "Syn initialised." << endl;
 
@@ -171,7 +184,7 @@ int main(int argc, char ** argv){
 
     bool res = 0;
     std::unordered_map<unsigned, BDD> strategy;
-
+    
     if(starting_player == "1")
         res = test->realizablity_env(strategy);
     else

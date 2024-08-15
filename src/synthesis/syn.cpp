@@ -13,7 +13,7 @@ using std::cout;
 using std::endl;
 
 syn::syn() {}
-
+// This is standard synthesis, as used for the MSO technique.
 syn::syn(shared_ptr<Cudd> m, string filename, string partfile, bool partial_observability)
 {
     //ctor
@@ -29,20 +29,26 @@ syn::syn(shared_ptr<Cudd> m, string filename, string partfile, bool partial_obse
 
 }
 
+/**
+ * This implements the belief-state construction as described in Sect. 5.
+ */
 syn::syn(shared_ptr<Cudd> m, string backupfile, string mainfile, string partfile, bool partial_observability)
 {
     //ctor
 
     std::cout << "Initializing synthesis for " << mainfile << std::endl;
     mgr = m;
+    // First initialize for main file
     bddMain = make_unique<DFA>(m);
     bddMain->initialize(mainfile, partfile, false);
     bddMain->dump_automaton("automaton_main.txt");
     //std::cout << "Initializing synthesis for  " << backupfile << std::endl;
+    // Initialize for backup , suing belief state construction
     bddBackup = make_unique<DFA>(m);
     bddBackup->initialize(backupfile, partfile, true); 
     bddBackup->dump_automaton("automaton_backup.txt");
     auto bddt = make_unique<DFA>(m);
+    // Combine using synchronous product
     bddt->init_from_cross_product(bddMain.get(), bddBackup.get()); 
     bddt->dump_automaton("automaton_cross.txt");
     bdd = move(bddt); 
